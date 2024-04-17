@@ -48,7 +48,14 @@ select * from projectMap;
 
 /*
 Applying window function on the given table
+we use row number sql rank function to get a unique sequential number for each row in the specified data. it gives the rank one for the first
+row and then increments the value by one for each row, we get different ranks for the row having similar values
 
+we use rank function to specify the rank for each row in the result set
+
+we use dense rank for not skipping the next rank without skipping
+
+ntile rank is used for splitting the data into the number of paritions
 */
 
 -- How many no of employees are asigned into projects, print their id, name, deparment
