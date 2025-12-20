@@ -1,0 +1,34 @@
+{
+  "name": "Tarun Kummari",
+  "title": "Data Scientist | Data Science Associate",
+  "location": "Hyderabad, India",
+  "about": "Detail-oriented Data Scientist with strong experience in data science, analytics, and machine learning. Skilled in translating business problems into actionable insights through predictive modeling, data analysis, and scalable data solutions.",
+
+  "skills": {
+    "Programming": ["Python", "SQL"],
+    "Frameworks": ["Pandas", "NumPy", "Scikit-learn", "TensorFlow", "Flask"],
+    "Databases": ["MySQL", "Microsoft SQL Server", "Chroma DB"],
+    "ML & AI": ["Machine Learning", "Deep Learning", "NLP", "Generative AI"],
+    "Tools": ["Tableau", "Power BI", "Git", "GitHub"]
+  },
+
+  "projects": [
+    {
+      "name": "RAG-Based Search Engine",
+      "description": "Context-aware document retrieval using Gemini 1.5 Pro and Chroma DB."
+    },
+    {
+      "name": "Customer Churn Prediction",
+      "description": "End-to-end churn prediction pipeline with ML models and customer segmentation."
+    },
+    {
+      "name": "Loan Default Risk Analysis",
+      "description": "ML-based loan risk prediction system deployed using Flask on AWS EC2."
+    }
+  ],
+
+  "contact": {
+    "email": "tarun.95532@gmail.com",
+    "linkedin": "https://www.linkedin.com/in/tarunkummari"
+  }
+}
