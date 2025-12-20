@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 
 # Paths
-DATA_FILE = "data.json"
-TEMPLATE_FILE = "templates/index.template.html"
+DATA_FILE = r"D:\GIT\practice\PagesDemo\data.json"
+TEMPLATE_FILE = r"D:\GIT\practice\PagesDemo\templates\index.html"
 DIST_DIR = Path("dist")
 OUTPUT_FILE = DIST_DIR / "index.html"
 
