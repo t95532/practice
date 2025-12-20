@@ -1,36 +1,45 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>{{name}} | Portfolio</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>{{ data.name }} | Portfolio</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
 
 <header>
-  <h1>{{name}}</h1>
-  <p>{{title}}</p>
-  <span>{{location}}</span>
+  <h1>{{ data.name }}</h1>
+  <p>{{ data.title }}</p>
+  <span>{{ data.location }}</span>
 </header>
 
 <section>
-  <h2>About Me</h2>
-  <p>{{about}}</p>
+  <h2>About</h2>
+  <p>{{ data.about }}</p>
 </section>
 
 <section>
   <h2>Skills</h2>
-  {{skills}}
+  {% for category, skills in data.skills.items() %}
+    <h3>{{ category }}</h3>
+    <ul>
+      {% for skill in skills %}
+        <li>{{ skill }}</li>
+      {% endfor %}
+    </ul>
+  {% endfor %}
 </section>
 
 <section>
   <h2>Projects</h2>
-  {{projects}}
+  <ul>
+    {% for project in data.projects %}
+      <li><strong>{{ project.name }}</strong> – {{ project.description }}</li>
+    {% endfor %}
+  </ul>
 </section>
 
 <footer>
-  <p>Email: <a href="mailto:{{email}}">{{email}}</a></p>
-  <p><a href="{{linkedin}}" target="_blank">LinkedIn</a></p>
+  <p>{{ data.contact.email }}</p>
 </footer>
 
 </body>

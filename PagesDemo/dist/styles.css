@@ -1,37 +1,27 @@
 body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #f4f6f8;
-  color: #333;
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(120deg, #0f172a, #020617);
+  color: #e5e7eb;
+  line-height: 1.8;
 }
 
 header {
-  background: #1f2933;
-  color: white;
-  padding: 2rem;
   text-align: center;
+  padding: 2rem;
 }
 
 section {
   max-width: 900px;
-  margin: auto;
+  margin: 2rem auto;
+  background: #020617;
   padding: 2rem;
-  background: white;
-  margin-top: 1rem;
+  border-radius: 12px;
+}
+
+p {
+  text-indent: 1.5em;
 }
 
 h2 {
-  border-bottom: 2px solid #ddd;
-  padding-bottom: 0.5rem;
-}
-
-ul {
-  list-style-type: square;
-}
-
-footer {
-  text-align: center;
-  padding: 1.5rem;
-  background: #e5e7eb;
-  margin-top: 2rem;
+  border-bottom: 2px solid #334155;
 }
