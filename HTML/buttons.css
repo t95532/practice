@@ -1,0 +1,72 @@
+<style>
+    .subscribe-button {
+        background-color: red;
+        color: white;   
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 8px;
+        transition: opacity 0.15s;
+    }
+</style>
+
+<style>
+    .subscribe-button:hover {
+        opacity: 0.6;
+    }
+</style>
+
+<style>
+    .subscribe-button:active {
+        background-color: blue;
+    }
+
+</style>
+
+
+<style>
+    .join-button {
+        background-color: green;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: opacity 0.15s, color 0.15s;
+    }
+</style>
+
+<style>
+    .join-button:hover {
+        background-color: red;
+    }
+</style>
+
+<style>
+    .tweet-button {
+        background-color: #1DA1F2;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        margin: 8px;
+        font-weight: bold;
+        transition: box-shadow 0.15s;
+    }
+</style>
+
+<style>
+    .tweet-button:hover {
+        box-shadow: 5px 5px 10px rgba(29, 161, 242, 0.6);
+    }
+</style>
+<button class = "tweet-button">
+    tweet
+</button>
+
+    </head>
+    <body>
+    </body>
+
