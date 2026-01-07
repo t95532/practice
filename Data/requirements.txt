@@ -7,3 +7,4 @@ joblib
 #pickle
 requests
 streamlit
+mlflow
