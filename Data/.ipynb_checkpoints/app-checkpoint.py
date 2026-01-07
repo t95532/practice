@@ -16,10 +16,10 @@ st.set_page_config(page_title="Diabetes Prediction", layout="centered")
 # Load scaler & model
 # -----------------------------
 BASE_DIR = Path(__file__).resolve().parent
-print(BASE_DIR)
+
 # project root (same level as Data)
 SCALER_PATH = BASE_DIR / "lib" / "scaler.joblib"
-MODEL_PATH = BASE_DIR / "lib" / "model.pkl"
+MODEL_PATH = BASE_DIR / "lib" / "model_20260105_214327.pkl"
 
 scaler = joblib.load(SCALER_PATH)
 
