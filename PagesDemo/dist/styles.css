@@ -1,27 +1,36 @@
-body {
-  font-family: "Segoe UI", sans-serif;
-  background: linear-gradient(120deg, #0f172a, #020617);
-  color: #e5e7eb;
-  line-height: 1.8;
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-header {
+/* Full-screen center */
+.hero {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   text-align: center;
-  padding: 2rem;
 }
 
-section {
-  max-width: 900px;
-  margin: 2rem auto;
-  background: #020617;
-  padding: 2rem;
-  border-radius: 12px;
+/* Name styling */
+.hero-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 48pt; /* EXACT requirement */
+  letter-spacing: 4px;
+  color: #ffffff;
+  animation: fadeSlide 1.8s ease-out forwards;
 }
 
-p {
-  text-indent: 1.5em;
-}
-
-h2 {
-  border-bottom: 2px solid #334155;
+/* Animation */
+@keyframes fadeSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
