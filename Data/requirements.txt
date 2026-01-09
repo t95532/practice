@@ -4,7 +4,6 @@ scikit-learn
 matplotlib
 seaborn
 joblib
-#pickle
 requests
 streamlit
 mlflow
