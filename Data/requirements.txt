@@ -1,8 +1,5 @@
-pandas
-numpy
-scikit-learn
-matplotlib
-seaborn
-joblib
-requests
 streamlit
+numpy
+pandas
+scikit-learn
+joblib
