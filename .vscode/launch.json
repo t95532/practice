@@ -4,9 +4,10 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         
         {
-            "type": "chrome",
+            "type": "Edge",
             "request": "launch",
             "name": "Open index.html",
             "file": "d:\\GIT\\practice\\PagesDemo\\templates\\index.html"
