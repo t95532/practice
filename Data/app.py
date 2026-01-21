@@ -1,9 +1,3 @@
-# !pip install streamlit
-# !pip install pickle
-# !pip install joblib
-# !pip install patlib
-# !pip install numpy
-
 import streamlit as st
 import joblib
 import pickle
