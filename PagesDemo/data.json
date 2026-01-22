@@ -9,7 +9,7 @@
     "Frameworks": ["Pandas", "NumPy", "Scikit-learn", "TensorFlow", "Flask"],
     "Databases": ["MySQL", "Microsoft SQL Server", "Chroma DB"],
     "ML & AI": ["Machine Learning", "Deep Learning", "NLP", "Generative AI"],
-    "Tools": ["Tableau", "Power BI", "Git", "GitHub"]
+    "Tools": ["Tableau", "Power BI", "Git", "GitHub","Docker"]
   },
 
   "projects": [
