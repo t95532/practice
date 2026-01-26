@@ -1,1 +1,2 @@
 what is jenkins?
+Jenkins is an open-source automation server used to build, test, and deploy software continuously. It integrates with version control systems, build tools, and deployment platforms to support continuous integration (CI) and continuous delivery (CD) workflows
