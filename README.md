@@ -1,3 +1,1 @@
-# practice
-All this projects are done for the purpose of practice, may not be similar/appliacable for real world projects, credits to the source for providing the content.
-The steps and implementation are based on the theoritical information gained about the particular concepts.
+All of these projects were created for practice purposes only. They may not fully reflect or apply to real-world projects. Credit goes to the original sources for providing the content. The steps and implementations are based on the theoretical knowledge acquired about the respective concepts.
