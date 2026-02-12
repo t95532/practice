@@ -1,2 +1,1 @@
 All of these projects were created for practice purposes only. They may not fully reflect or apply to real-world projects. Credit goes to the original sources for providing the content. The steps and implementations are based on the theoretical knowledge acquired about the respective concepts
-..
