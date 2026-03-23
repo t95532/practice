@@ -52,13 +52,13 @@
 #         st.error(f"⚠️ High risk of diabetes ({probability:.2%})")
 #     else:
 #         st.success(f"✅ Low risk of diabetes ({probability:.2%})")
-
-
+import sys
 import os
 import json
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from datetime import datetime
 import pandas as pd
-from src.model import load_model, predict
+from src.pipeline_pkg.model import load_model, predict
 
 def calculate_metrics(df):
     return {

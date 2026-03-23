@@ -20,11 +20,11 @@ def run_pipeline():
     preds = predict(model, df)
     df["prediction"] = preds
 
-    df.to_csv(OUTPUT_FILE, index=False)
+    df.to_csv(str(OUTPUT_FILE), index=False)
 
     metrics = generate_metrics(df)
 
-    with open(METRICS_FILE, "w") as f:
+    with open(str(METRICS_FILE), "w") as f:
         json.dump(metrics, f, indent=2)
 
     return True
