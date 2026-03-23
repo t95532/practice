@@ -1,0 +1,41 @@
+name: Daily ML Run
+
+on:
+  schedule:
+    - cron: "30 6 * * *"   # 12:00 PM IST
+  workflow_dispatch:
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        working-directory: Data
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run pipeline
+        working-directory: Data
+        run: |
+          python app.py
+
+      - name: Commit and push results
+        run: |
+          cd Data
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+
+          DATE=$(date +'%Y-%m-%d')
+
+          git add output/ metrics/
+          git commit -m "Daily job run on $DATE" || echo "No changes to commit"
+          git push
