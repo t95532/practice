@@ -1,5 +1,8 @@
 name: Daily ML Run
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   schedule:
     - cron: "30 6 * * *"   # 12:00 PM IST
@@ -21,12 +24,13 @@ jobs:
       - name: Install dependencies
         working-directory: Data
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run pipeline
         working-directory: Data
         run: |
-          python pipeline.py
+          python app_pipeline.py
 
       - name: Commit and push results
         run: |
@@ -37,5 +41,7 @@ jobs:
           DATE=$(date +'%Y-%m-%d')
 
           git add output/ metrics/
+
           git commit -m "Daily job run on $DATE" || echo "No changes to commit"
-          git push
+
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
