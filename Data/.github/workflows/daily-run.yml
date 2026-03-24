@@ -26,7 +26,7 @@ jobs:
       - name: Run pipeline
         working-directory: Data
         run: |
-          python app.py
+          python pipeline.py
 
       - name: Commit and push results
         run: |
