@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Data Pipeline Architecture</title>
+  <style>
+    :root {
+      --bg: #f4f7f9;
+      --header-bg: rgba(255, 255, 255, 0.92);
+      --card-bg: #ffffff;
+      --card-border: #dce3ea;
+      --card-label: #64748b;
+      --chip-bg: #f8fafc;
+      --chip-border: #cbd5e1;
+      --text-main: #0f172a;
+      --text-sub: #475569;
+      --line-base: #cbd5e1;
+      --teal: #0d9488;
+      --teal-soft: rgba(13, 148, 136, 0.14);
+      --teal-glow: rgba(13, 148, 136, 0.35);
+      --amber: #d97706;
+      --amber-soft: rgba(217, 119, 6, 0.16);
+      --red: #dc2626;
+      --shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b111e;
+        --header-bg: rgba(15, 23, 42, 0.92);
+        --card-bg: #131c2e;
+        --card-border: #24324d;
+        --card-label: #94a3b8;
+        --chip-bg: #1a253c;
+        --chip-border: #334463;
+        --text-main: #f1f5f9;
+        --text-sub: #94a3b8;
+        --line-base: #334463;
+        --teal: #2dd4bf;
+        --teal-soft: rgba(45, 212, 191, 0.16);
+        --teal-glow: rgba(45, 212, 191, 0.32);
+        --amber: #fbbf24;
+        --amber-soft: rgba(251, 191, 36, 0.18);
+        --red: #f87171;
+        --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: var(--header-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 10px 14px;
+    }
+
+    .header-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .step-badge {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--teal);
+      white-space: nowrap;
+    }
+
+    .controls {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 99px;
+      background: var(--chip-bg);
+      border: 1px solid var(--chip-border);
+      color: var(--text-sub);
+    }
+
+    .live-badge.connected {
+      border-color: var(--teal);
+      color: var(--teal);
+      background: var(--teal-soft);
+    }
+
+    .live-badge.error {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .live-badge.connected .live-dot {
+      animation: liveBlink 1.2s infinite ease-in-out;
+    }
+
+    @keyframes liveBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .live-drawer {
+      display: none;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--card-border);
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .live-drawer.open {
+      display: flex;
+    }
+
+    .live-drawer select,
+    .live-drawer input {
+      background: var(--chip-bg);
+      color: var(--text-main);
+      border: 1px solid var(--chip-border);
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 12px;
+      min-height: 30px;
+    }
+
+    .live-drawer input {
+      flex: 1;
+      min-width: 190px;
+    }
+
+    button {
+      background: var(--chip-bg);
+      color: var(--text-main);
+      border: 1px solid var(--chip-border);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      min-height: 30px;
+    }
+
+    button:hover {
+      border-color: var(--teal);
+    }
+
+    button[aria-pressed="true"] {
+      background: var(--teal-soft);
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+
+    button:focus-visible,
+    [role="button"]:focus-visible {
+      outline: 2px solid var(--teal);
+      outline-offset: 2px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 4px;
+      background: var(--card-border);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--teal);
+      border-radius: 99px;
+      transition: width 0.12s linear;
+    }
+
+    .caption {
+      font-size: 12.5px;
+      color: var(--text-sub);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .caption strong {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .elapsed-pill {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      border-radius: 6px;
+      background: var(--teal-soft);
+      color: var(--teal);
+    }
+
+    .canvas-wrap {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 14px 28px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+
+    svg#pipeline-svg {
+      width: 100%;
+      min-width: 1060px;
+      height: auto;
+      display: block;
+      overflow: visible;
+    }
+
+    .layer-card {
+      fill: var(--card-bg);
+      stroke: var(--card-border);
+      stroke-width: 1.2;
+      filter: drop-shadow(var(--shadow));
+    }
+
+    .layer-label {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      fill: var(--card-label);
+    }
+
+    .flow-track {
+      fill: none;
+      stroke: var(--line-base);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+    }
+
+    .flow-track.active {
+      stroke: var(--teal);
+      stroke-width: 2.2;
+    }
+
+    .flow-track.amber-dashed {
+      stroke: var(--amber);
+      stroke-dasharray: 4 3;
+      stroke-width: 1.8;
+      opacity: 0.55;
+    }
+
+    .flow-track.amber-dashed.active {
+      opacity: 1;
+      stroke-width: 2.4;
+    }
+
+    .flow-track.jenkins-orch {
+      stroke: var(--card-border);
+      stroke-dasharray: 3 4;
+      stroke-width: 1.4;
+      opacity: 0.7;
+    }
+
+    .flow-track.jenkins-orch.active {
+      stroke: var(--teal);
+      stroke-dasharray: 4 3;
+      stroke-width: 2;
+      opacity: 1;
+    }
+
+    .chip-group {
+      cursor: pointer;
+    }
+
+    .chip-rect {
+      fill: var(--chip-bg);
+      stroke: var(--chip-border);
+      stroke-width: 1.3;
+      transition: fill 0.25s ease, stroke 0.25s ease, stroke-width 0.2s ease;
+    }
+
+    .chip-group.done .chip-rect {
+      fill: var(--teal-soft);
+      stroke: var(--teal);
+      stroke-width: 1.5;
+    }
+
+    .chip-group.active .chip-rect {
+      fill: var(--teal-soft);
+      stroke: var(--teal);
+      stroke-width: 2.3;
+    }
+
+    .chip-group.amber-active .chip-rect {
+      fill: var(--amber-soft);
+      stroke: var(--amber);
+      stroke-width: 2.3;
+    }
+
+    .chip-group.amber-done .chip-rect {
+      fill: var(--amber-soft);
+      stroke: var(--amber);
+      stroke-width: 1.5;
+    }
+
+    .pulse-ring {
+      fill: none;
+      stroke: var(--teal);
+      stroke-width: 2;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @keyframes chipPulse {
+      0% { opacity: 0.75; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.06); }
+    }
+
+    .chip-group.active .pulse-ring {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: chipPulse 0.9s ease-out;
+    }
+
+    .chip-title {
+      font-size: 11px;
+      font-weight: 700;
+      fill: var(--text-main);
+    }
+
+    .chip-sub {
+      font-size: 9px;
+      font-weight: 500;
+      fill: var(--text-sub);
+    }
+
+    .chip-group.active .chip-sub.dynamic {
+      fill: var(--teal);
+      font-weight: 700;
+    }
+
+    .data-dot {
+      fill: var(--teal);
+      filter: drop-shadow(0 0 3px var(--teal-glow));
+    }
+
+    .reject-dot {
+      fill: var(--red);
+    }
+
+    .pkl-pill rect {
+      fill: var(--amber);
+    }
+
+    .pkl-pill text {
+      fill: #ffffff;
+      font-size: 8.5px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+  </style>
+</head>
+<body>
+  <header class="sticky-header">
+    <div class="header-inner">
+      <div class="top-row">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="step-badge" id="step-counter" aria-live="polite">Step 1 of 6</span>
+          <span class="live-badge" id="mode-badge"><span class="live-dot"></span><span id="mode-text">DEMO</span></span>
+        </div>
+        <div class="controls">
+          <button type="button" id="btn-live" aria-label="Toggle live pipeline connection settings" aria-pressed="false">Live Feed</button>
+          <button type="button" id="btn-play" aria-label="Pause or play animation" aria-pressed="false">Pause</button>
+          <button type="button" id="btn-speed" aria-label="Cycle playback speed">1×</button>
+          <button type="button" id="btn-follow" aria-label="Toggle auto-scroll follow" aria-pressed="true">Follow</button>
+        </div>
+      </div>
+      <div class="live-drawer" id="live-drawer">
+        <select id="live-transport" aria-label="Real-time transport protocol">
+          <option value="sse">SSE (EventSource)</option>
+          <option value="ws">WebSocket (ws://)</option>
+          <option value="poll">HTTP Poll (JSON)</option>
+          <option value="sim">Simulate Real-Time</option>
+        </select>
+        <input type="text" id="live-url" placeholder="http://localhost:8000/api/pipeline/stream" aria-label="Endpoint URL" />
+        <button type="button" id="btn-connect">Connect</button>
+        <button type="button" id="btn-next-step" style="display:none;">Complete Step →</button>
+        <button type="button" id="btn-demo">Demo Loop</button>
+      </div>
+      <div class="progress-track" role="progressbar" aria-valuemin="1" aria-valuemax="6" aria-valuenow="1" id="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="caption" id="step-caption" aria-live="polite">Initializing pipeline…</div>
+    </div>
+  </header>
+
+  <main class="canvas-wrap" id="canvas-wrap">
+    <svg id="pipeline-svg" viewBox="0 0 1160 320" role="img" aria-label="Standalone GitHub Actions Daily ML Run workflow diagram for t95532/practice"></svg>
+  </main>
+
+  <script>
+    /**
+     * EDITABLE STANDALONE GITHUB ACTIONS WORKFLOW CONFIGURATION
+     * Matches: name: Daily ML Run | runs-on: ubuntu-latest | cron: "30 6 * * *" | Data/app_pipeline.py
+     */
+    const PIPELINE_DATA = {
+      viewBox: "0 0 1160 320",
+      stepDurationMs: 1400,
+      idleDurationMs: 1600,
+      layers: [
+        { id: "L0", label: "Trigger (on: schedule & workflow_dispatch)", x: 10, y: 16, w: 174, h: 286 },
+        { id: "L1", label: "Runner (ubuntu-latest · NODE24)", x: 196, y: 16, w: 184, h: 286 },
+        { id: "L2", label: "Step 1 · Checkout", x: 392, y: 16, w: 176, h: 286 },
+        { id: "L3", label: "Step 2 & 3 · Python & Deps", x: 580, y: 16, w: 186, h: 286 },
+        { id: "L4", label: "Step 4 · Run Pipeline", x: 778, y: 16, w: 182, h: 286 },
+        { id: "L5", label: "Step 5 · Commit & Push", x: 972, y: 16, w: 178, h: 286 }
+      ],
+      chips: [
+        // Layer 0: Workflow Triggers
+        { id: "cronTrig", layer: "L0", title: "Cron Schedule", sub: "30 6 * * * (12PM IST)", icon: "githubActions", x: 22, y: 74, w: 150, h: 58, desc: "on.schedule: Runs daily at 06:30 UTC (12:00 PM IST) on GitHub Actions." },
+        { id: "dispatchTrig", layer: "L0", title: "workflow_dispatch", sub: "Manual trigger", icon: "gear", x: 22, y: 188, w: 150, h: 58, desc: "on.workflow_dispatch: Allows manual on-demand execution from GitHub Actions." },
+
+        // Layer 1: Runner & Env
+        { id: "runner", layer: "L1", title: "ubuntu-latest", sub: "NODE24=true", icon: "code", x: 208, y: 130, w: 160, h: 62, desc: "jobs.run-pipeline: Runs on ubuntu-latest with FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true." },
+
+        // Layer 2: Checkout Repo
+        { id: "checkout", layer: "L2", title: "Checkout repo", sub: "actions/checkout@v4", icon: "git", x: 404, y: 130, w: 152, h: 62, desc: "Step 1: Checks out repository t95532/practice into the runner workspace." },
+
+        // Layer 3: Setup Python 3.10 + Install Data/requirements.txt
+        { id: "setupPy", layer: "L3", title: "Set up Python", sub: "actions/setup-python@v5", icon: "python", x: 592, y: 76, w: 162, h: 56, desc: "Step 2: Installs Python version '3.10' on the runner." },
+        { id: "pipInstall", layer: "L3", title: "Install dependencies", sub: "Data/requirements.txt", icon: "layers", x: 592, y: 188, w: 162, h: 56, desc: "Step 3 (working-directory: Data): Upgrades pip and installs Data/requirements.txt." },
+
+        // Layer 4: Run Data/app_pipeline.py
+        { id: "runPipeline", layer: "L4", title: "Run pipeline", sub: "python app_pipeline.py", icon: "python", x: 790, y: 130, w: 158, h: 62, desc: "Step 4 (working-directory: Data): Executes `python app_pipeline.py` standalone inside the workflow." },
+
+        // Layer 5: Commit & Push output/ and metrics/
+        { id: "commitPush", layer: "L5", title: "Commit & push", sub: "output/ & metrics/", icon: "git", x: 984, y: 130, w: 154, h: 62, desc: "Step 5: Sets git user t95532 (tarun.95532@gmail.com), stages Data/output/ and Data/metrics/, commits 'Daily job run on YYYY-MM-DD', and pushes via GITHUB_TOKEN." }
+      ],
+      connectors: [
+        // Triggers fan into ubuntu-latest runner
+        { id: "c_cron_runner", from: "cronTrig", to: "runner", d: "M 172 103 C 190 103, 188 148, 208 148" },
+        { id: "c_disp_runner", from: "dispatchTrig", to: "runner", d: "M 172 217 C 190 217, 188 174, 208 174" },
+
+        // Runner -> Checkout
+        { id: "c_runner_checkout", from: "runner", to: "checkout", d: "M 368 161 L 404 161" },
+
+        // Checkout -> Setup Python 3.10 -> Install Data/requirements.txt
+        { id: "c_checkout_py", from: "checkout", to: "setupPy", d: "M 556 150 C 574 150, 572 104, 592 104" },
+        { id: "c_py_pip", from: "setupPy", to: "pipInstall", d: "M 673 132 L 673 188" },
+
+        // Install deps -> Run Data/app_pipeline.py
+        { id: "c_pip_run", from: "pipInstall", to: "runPipeline", d: "M 754 216 C 772 216, 770 174, 790 174" },
+
+        // Run pipeline -> Commit & push output/ & metrics/
+        { id: "c_run_push", from: "runPipeline", to: "commitPush", d: "M 948 161 L 984 161" }
+      ],
+      steps: [
+        { chip: "cronTrig", paths: ["c_cron_runner"], label: "Cron Trigger (30 6 * * *)", caption: "Scheduled run fires at 06:30 UTC (12:00 PM IST) or via workflow_dispatch" },
+        { chip: "runner", paths: ["c_disp_runner", "c_runner_checkout"], label: "ubuntu-latest Runner", caption: "Job 'run-pipeline' boots on ubuntu-latest with FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true" },
+        { chip: "checkout", paths: ["c_checkout_py"], label: "Checkout repo", caption: "actions/checkout@v4 checks out t95532/practice" },
+        { chip: "setupPy", paths: ["c_py_pip"], label: "Set up Python 3.10", caption: "actions/setup-python@v5 configures Python 3.10" },
+        { chip: "pipInstall", paths: ["c_pip_run"], label: "Install dependencies", caption: "In Data/: upgrades pip and runs `pip install -r requirements.txt`" },
+        { chip: "runPipeline", paths: ["c_run_push"], label: "Run pipeline & Push", caption: "Runs `python app_pipeline.py` in Data/, then commits & pushes output/ and metrics/" }
+      ]
+    };
+
+    /**
+     * Crisp Official Brand & Format Vector Icons (20x20 coordinate box)
+     */
+    const ICONS = {
+      githubActions: `<circle cx="10" cy="10" r="8.5" fill="#2088FF"/>
+                      <path d="M10 4.5l4.8 4.8-1.6 1.6-2-2v5.6H7.8V8.9l-2 2-1.6-1.6L10 4.5z" fill="#ffffff"/>`,
+      jenkins: `<circle cx="10" cy="10" r="8.5" fill="#D33833"/>
+                <circle cx="10" cy="8.2" r="3.4" fill="#F0D6B7"/>
+                <path d="M6.8 6.4c.5-2.2 5.9-2.2 6.4 0" fill="#231F20"/>
+                <path d="M5.5 16c.5-2.5 2.4-3.6 4.5-3.6s4 1.1 4.5 3.6" fill="#231F20"/>
+                <path d="M8.5 12.6L10 14.5l1.5-1.9z" fill="#D33833"/>
+                <circle cx="8.9" cy="8" r="0.55" fill="#231F20"/>
+                <circle cx="11.1" cy="8" r="0.55" fill="#231F20"/>`,
+      csv: `<rect x="2" y="2" width="16" height="16" rx="3" fill="#16a34a" opacity="0.18" stroke="#16a34a" stroke-width="1.5"/>
+            <path d="M2 7h16M7 7v11M13 7v11" stroke="#16a34a" stroke-width="1.3"/>`,
+      json: `<rect x="2" y="2" width="16" height="16" rx="3" fill="#0284c7" opacity="0.16" stroke="#0284c7" stroke-width="1.5"/>
+             <path d="M8 6c-1.5 0-1.5 1.5-1.5 2.5S5.5 10 5.5 10s1 .5 1 1.5S6.5 14 8 14M12 6c1.5 0 1.5 1.5 1.5 2.5s1 1.5 1 1.5-1 .5-1 1.5 0 2.5-1.5 2.5" fill="none" stroke="#0284c7" stroke-width="1.5" stroke-linecap="round"/>`,
+      parquet: `<rect x="2" y="2" width="16" height="16" rx="3" fill="#7c3aed" opacity="0.16" stroke="#7c3aed" stroke-width="1.5"/>
+                <path d="M6 5v10M10 5v10M14 5v10" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round"/>`,
+      postgres: `<path d="M14.6 4.2c-1.4-.9-3.3-1-4.8-.4-1.5-.6-3.4-.5-4.8.4-1.8 1.2-2.4 3.6-1.8 5.8.5 1.9 1.9 3.4 3.6 4.1.3 1.4.8 2.8 1.8 3.2.8.3 1.5-.3 1.6-1.2.1-.8-.1-1.8-.1-2.5.6.1 1.2.1 1.8 0 .2 1.2.6 2.5 1.6 2.7.9.2 1.5-.6 1.5-1.6 0-1.1-.4-2.2-.3-3.2 1.1-.9 1.8-2.3 1.8-3.8 0-1.5-.7-2.8-1.9-3.5z" fill="#336791"/>
+                 <circle cx="8.2" cy="7.6" r="0.9" fill="#fff"/><circle cx="11.8" cy="7.6" r="0.9" fill="#fff"/>
+                 <path d="M10 9.5c-.6 0-1 .5-1 1.2v2.4c0 .5.4.9.9.9s.9-.4.9-.9v-2.4c0-.7-.3-1.2-.8-1.2z" fill="#fff" opacity="0.85"/>`,
+      git: `<path d="M18.4 9.2L10.8 1.6c-.4-.4-1.2-.4-1.6 0L7.5 3.3l2.1 2.1c.5-.2 1.1-.1 1.5.3.4.4.5 1 .3 1.5l2 2c.5-.2 1.1-.1 1.5.3.6.6.6 1.5 0 2.1-.6.6-1.5.6-2.1 0-.4-.4-.5-1.1-.3-1.6l-1.9-1.9v5c.1.1.3.2.4.3.6.6.6 1.5 0 2.1-.6.6-1.5.6-2.1 0-.6-.6-.6-1.5 0-2.1.2-.2.4-.3.6-.4V8c-.2-.1-.4-.2-.6-.4-.4-.4-.5-1.1-.3-1.6L6.4 4.4 1.6 9.2c-.4.4-.4 1.2 0 1.6l7.6 7.6c.4.4 1.2.4 1.6 0l7.6-7.6c.4-.4.4-1.2 0-1.6z" fill="#F05032"/>`,
+      python: `<path d="M9.9 2C6.4 2 6.7 3.5 6.7 3.5v1.6h3.3v.5H5.3S3 5.3 3 8.8s2 3.4 2 3.4h1.2v-1.7s-.1-2 2-2h3.2s1.9 0 1.9-1.8V3.9S13.6 2 9.9 2zm-1.8 1.1c.3 0 .6.3.6.6s-.3.6-.6.6-.6-.3-.6-.6.3-.6.6-.6z" fill="#3776AB"/>
+               <path d="M10.1 18c3.5 0 3.2-1.5 3.2-1.5v-1.6h-3.3v-.5h4.7s2.3.3 2.3-3.2-2-3.4-2-3.4h-1.2v1.7s.1 2-2 2H8.6s-1.9 0-1.9 1.8v2.8S6.4 18 10.1 18zm1.8-1.1c-.3 0-.6-.3-.6-.6s.3-.6.6-.6.6.3.6.6-.3.6-.6.6z" fill="#FFD43B"/>`,
+      superset: `<path d="M6.2 6.5C4 6.5 2.5 8 2.5 10s1.5 3.5 3.7 3.5c1.8 0 3-1.2 4.3-3.5 1.3-2.3 2.5-3.5 4.3-3.5 2.2 0 3.7 1.5 3.7 3.5s-1.5 3.5-3.7 3.5c-1.2 0-2.2-.5-3-1.4" fill="none" stroke="#20A7C9" stroke-width="2.3" stroke-linecap="round"/>
+                 <path d="M8.2 7.9c-.6-.9-1.3-1.4-2-1.4" fill="none" stroke="#20A7C9" stroke-width="2.3" stroke-linecap="round"/>`,
+      layers: `<path d="M10 3l7 4-7 4-7-4 7-4zm-7 7l7 4 7-4m-14 3l7 4 7-4" fill="none" stroke="#0d9488" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+      filter: `<path d="M3 4h14l-5.5 6.5v4.5l-3 1.5v-6L3 4z" fill="none" stroke="#0d9488" stroke-width="1.6" stroke-linejoin="round"/>`,
+      spark: `<path d="M10 2l2.1 5.6L18 10l-5.9 2.4L10 18l-2.1-5.6L2 10l5.9-2.4L10 2z" fill="none" stroke="#0d9488" stroke-width="1.6" stroke-linejoin="round"/>`,
+      code: `<path d="M7 6l-4 4 4 4M13 6l4 4-4 4M11 4l-2 12" fill="none" stroke="#0d9488" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+      gear: `<circle cx="10" cy="10" r="3" fill="none" stroke="#0d9488" stroke-width="1.6"/>
+             <path d="M10 2v2.2M10 15.8V18M2 10h2.2M15.8 10H18M4.3 4.3l1.6 1.6M14.1 14.1l1.6 1.6M15.7 4.3l-1.6 1.6M5.9 14.1l-1.6 1.6" stroke="#0d9488" stroke-width="1.6" stroke-linecap="round"/>`,
+      merge: `<path d="M5 4v4c0 2 2 3 5 3s5-1 5-3V4M10 11v5m-2.5-2.5L10 16l2.5-2.5" fill="none" stroke="#0d9488" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`
+    };
+
+    (function initPipeline() {
+      const svg = document.getElementById("pipeline-svg");
+      const canvasWrap = document.getElementById("canvas-wrap");
+      const NS = "http://www.w3.org/2000/svg";
+      const stepCounter = document.getElementById("step-counter");
+      const progressBar = document.getElementById("progress-bar");
+      const progressFill = document.getElementById("progress-fill");
+      const captionEl = document.getElementById("step-caption");
+      const btnPlay = document.getElementById("btn-play");
+      const btnSpeed = document.getElementById("btn-speed");
+      const btnFollow = document.getElementById("btn-follow");
+      const btnLive = document.getElementById("btn-live");
+      const liveDrawer = document.getElementById("live-drawer");
+      const liveTransport = document.getElementById("live-transport");
+      const liveUrl = document.getElementById("live-url");
+      const btnConnect = document.getElementById("btn-connect");
+      const btnNextStep = document.getElementById("btn-next-step");
+      const btnDemo = document.getElementById("btn-demo");
+      const modeBadge = document.getElementById("mode-badge");
+      const modeText = document.getElementById("mode-text");
+
+      svg.setAttribute("viewBox", PIPELINE_DATA.viewBox);
+
+      const el = (tag, attrs = {}) => {
+        const node = document.createElementNS(NS, tag);
+        for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+        return node;
+      };
+
+      // 1. Render Horizontal Layer Columns
+      PIPELINE_DATA.layers.forEach(layer => {
+        const g = el("g");
+        g.appendChild(el("rect", {
+          x: layer.x, y: layer.y, width: layer.w, height: layer.h, rx: 14,
+          class: "layer-card"
+        }));
+        const txt = el("text", { x: layer.x + 12, y: layer.y + 20, class: "layer-label" });
+        txt.textContent = layer.label;
+        g.appendChild(txt);
+        svg.appendChild(g);
+      });
+
+      // 2. Render Connector Paths
+      const pathMap = {};
+      const connLayer = el("g", { id: "connectors-layer" });
+      PIPELINE_DATA.connectors.forEach(c => {
+        const cls = c.amber ? "flow-track amber-dashed" : c.orch ? "flow-track jenkins-orch" : "flow-track";
+        const p = el("path", {
+          id: c.id,
+          d: c.d,
+          class: cls
+        });
+        connLayer.appendChild(p);
+        pathMap[c.id] = p;
+      });
+      svg.appendChild(connLayer);
+
+      // 3. Render Chips
+      const chipMap = {};
+      const chipSubMap = {};
+      const chipsLayer = el("g", { id: "chips-layer" });
+      PIPELINE_DATA.chips.forEach(c => {
+        const g = el("g", {
+          id: `chip-${c.id}`,
+          class: "chip-group",
+          role: "button",
+          tabindex: "0",
+          "aria-label": `${c.title}: ${c.desc}`
+        });
+
+        g.appendChild(el("rect", {
+          x: c.x, y: c.y, width: c.w, height: c.h, rx: 10,
+          class: "pulse-ring"
+        }));
+
+        g.appendChild(el("rect", {
+          x: c.x, y: c.y, width: c.w, height: c.h, rx: 10,
+          class: "chip-rect"
+        }));
+
+        const iconG = el("g", {
+          transform: `translate(${c.x + 8}, ${c.y + c.h / 2 - 10})`
+        });
+        iconG.innerHTML = ICONS[c.icon] || "";
+        g.appendChild(iconG);
+
+        const title = el("text", {
+          x: c.x + 33,
+          y: c.y + c.h / 2 - 3,
+          "text-anchor": "start",
+          class: "chip-title"
+        });
+        title.textContent = c.title;
+        g.appendChild(title);
+
+        const sub = el("text", {
+          x: c.x + 33,
+          y: c.y + c.h / 2 + 10,
+          "text-anchor": "start",
+          class: "chip-sub"
+        });
+        sub.textContent = c.sub;
+        g.appendChild(sub);
+
+        const inspectChip = () => {
+          captionEl.innerHTML = `<strong>${c.title}:</strong> ${c.desc}`;
+        };
+        g.addEventListener("click", inspectChip);
+        g.addEventListener("keydown", e => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inspectChip();
+          }
+        });
+
+        chipsLayer.appendChild(g);
+        chipMap[c.id] = { el: g, data: c };
+        chipSubMap[c.id] = sub;
+      });
+      svg.appendChild(chipsLayer);
+
+      // 4. Particle Overlay Layer (dots, reject drops, amber pkl badge)
+      const fxLayer = el("g", { id: "fx-layer", "pointer-events": "none" });
+      const dataDots = [0, 1, 2, 3].map(() => {
+        const d = el("circle", { r: 3.6, class: "data-dot", opacity: 0 });
+        fxLayer.appendChild(d);
+        return d;
+      });
+      const rejectDots = [0, 1, 2].map(() => {
+        const d = el("circle", { r: 3, class: "reject-dot", opacity: 0 });
+        fxLayer.appendChild(d);
+        return d;
+      });
+      const pklBadge = el("g", { class: "pkl-pill", opacity: 0 });
+      pklBadge.appendChild(el("rect", { x: -13, y: -8, width: 26, height: 16, rx: 5 }));
+      const pklText = el("text", { x: 0, y: 3, "text-anchor": "middle" });
+      pklText.textContent = ".pkl";
+      pklBadge.appendChild(pklText);
+      fxLayer.appendChild(pklBadge);
+      svg.appendChild(fxLayer);
+
+      // 5. Animation & Playback State
+      const speeds = [1, 2, 4];
+      let speedIdx = 0;
+      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let isPlaying = !prefersReduced;
+      let followMode = true;
+      let currentStep = 0;
+      let elapsedInPhase = 0;
+      let inIdle = false;
+      let lastTs = null;
+      let lastScrolledStep = -1;
+      let liveMode = false;
+      let liveStatus = "demo"; // "demo" | "connecting" | "connected" | "error"
+      let activeConn = null;
+      let liveStepProgress = 0;
+      let customLiveCaption = null;
+      let customLiveSub = null;
+      let stepStartedAt = performance.now();
+      let runStartedAt = performance.now();
+      let stepDurations = {}; // stores final elapsed seconds per step index
+
+      function formatSec(ms) {
+        const s = ms / 1000;
+        return s < 60 ? `${s.toFixed(1)}s` : `${Math.floor(s / 60)}m ${(s % 60).toFixed(0)}s`;
+      }
+
+      function setModeBadge(state, label) {
+        liveStatus = state;
+        modeBadge.className = "live-badge" + (state === "connected" ? " connected" : state === "error" ? " error" : "");
+        modeText.textContent = label;
+      }
+
+      function disconnectLive() {
+        if (activeConn) {
+          if (activeConn.type === "sse" && activeConn.source) activeConn.source.close();
+          if (activeConn.type === "ws" && activeConn.socket) activeConn.socket.close();
+          if (activeConn.type === "poll" && activeConn.timer) clearInterval(activeConn.timer);
+          activeConn = null;
+        }
+      }
+
+      /**
+       * Apply an incoming real-time pipeline event payload:
+       * { step: 1..13 | "srcA".."superset", status?: "running"|"completed"|"error", progress?: 0..1, durationMs?: number, caption?: string, sub?: string }
+       */
+      function applyRealtimeEvent(payload) {
+        if (!payload || typeof payload !== "object") return;
+        liveMode = true;
+        isPlaying = true;
+        syncPlayButton();
+
+        let idx = -1;
+        if (typeof payload.step === "number") {
+          idx = Math.max(0, Math.min(PIPELINE_DATA.steps.length - 1, payload.step - 1));
+        } else if (typeof payload.step === "string") {
+          idx = PIPELINE_DATA.steps.findIndex(s => s.chip === payload.step || s.label.toLowerCase().includes(payload.step.toLowerCase()));
+        }
+        if (idx === -1) return;
+
+        const now = performance.now();
+        // Reset run timer if starting a fresh run at step 0
+        if (idx === 0 && (inIdle || currentStep > 0)) {
+          runStartedAt = now;
+          stepDurations = {};
+        }
+
+        // Record elapsed duration of previous step when advancing
+        if (idx !== currentStep) {
+          stepDurations[currentStep] = payload.durationMs ?? (now - stepStartedAt);
+          stepStartedAt = now;
+        }
+
+        if (payload.status === "completed") {
+          stepDurations[idx] = payload.durationMs ?? (now - stepStartedAt);
+          if (idx === PIPELINE_DATA.steps.length - 1) {
+            inIdle = true;
+            currentStep = idx;
+            liveStepProgress = 1;
+          } else {
+            // Advance immediately to waiting/running state on next step if completed event arrives
+            inIdle = false;
+            currentStep = idx + 1;
+            stepStartedAt = now;
+            liveStepProgress = 0.05;
+          }
+        } else {
+          inIdle = false;
+          currentStep = idx;
+          if (typeof payload.progress === "number") {
+            liveStepProgress = Math.max(0, Math.min(1, payload.progress));
+          }
+        }
+
+        customLiveCaption = payload.caption || null;
+        customLiveSub = payload.sub || null;
+        lastScrolledStep = -1;
+        renderState(currentStep, liveStepProgress);
+      }
+
+      function connectLive(transport, url) {
+        disconnectLive();
+        btnNextStep.style.display = "none";
+
+        if (transport === "sim") {
+          liveMode = true;
+          inIdle = false;
+          currentStep = 0;
+          stepDurations = {};
+          runStartedAt = performance.now();
+          stepStartedAt = performance.now();
+          customLiveCaption = null;
+          customLiveSub = null;
+          lastScrolledStep = -1;
+          setModeBadge("connected", "LIVE · SIM");
+          btnNextStep.style.display = "inline-block";
+          renderState(0, 0.1);
+          return;
+        }
+
+        if (!url) {
+          setModeBadge("error", "NO URL");
+          return;
+        }
+        liveMode = true;
+        runStartedAt = performance.now();
+        stepStartedAt = performance.now();
+        setModeBadge("connecting", "CONNECTING…");
+
+        try {
+          if (transport === "sse") {
+            const source = new EventSource(url);
+            source.onopen = () => setModeBadge("connected", "LIVE · SSE");
+            source.onmessage = e => {
+              try { applyRealtimeEvent(JSON.parse(e.data)); } catch (_) {}
+            };
+            source.onerror = () => setModeBadge("error", "SSE ERR");
+            activeConn = { type: "sse", source };
+          } else if (transport === "ws") {
+            const socket = new WebSocket(url);
+            socket.onopen = () => setModeBadge("connected", "LIVE · WS");
+            socket.onmessage = e => {
+              try { applyRealtimeEvent(JSON.parse(e.data)); } catch (_) {}
+            };
+            socket.onerror = () => setModeBadge("error", "WS ERR");
+            socket.onclose = () => { if (liveMode) setModeBadge("error", "WS CLOSED"); };
+            activeConn = { type: "ws", socket };
+          } else if (transport === "poll") {
+            const doPoll = async () => {
+              try {
+                const res = await fetch(url, { cache: "no-store" });
+                if (!res.ok) throw new Error(res.statusText);
+                const data = await res.json();
+                setModeBadge("connected", "LIVE · POLL");
+                applyRealtimeEvent(data);
+              } catch (_) {
+                setModeBadge("error", "POLL ERR");
+              }
+            };
+            doPoll();
+            const timer = setInterval(doPoll, 1500);
+            activeConn = { type: "poll", timer };
+          }
+        } catch (_) {
+          setModeBadge("error", "CONN ERR");
+        }
+      }
+
+      function switchToDemo() {
+        disconnectLive();
+        liveMode = false;
+        inIdle = false;
+        currentStep = 0;
+        elapsedInPhase = 0;
+        stepDurations = {};
+        runStartedAt = performance.now();
+        stepStartedAt = performance.now();
+        customLiveCaption = null;
+        customLiveSub = null;
+        lastScrolledStep = -1;
+        btnNextStep.style.display = "none";
+        setModeBadge("demo", "DEMO");
+      }
+
+      // Expose global JS bridge & postMessage listener for embedded dashboards / Airflow / Dagster
+      window.PipelineController = {
+        push: applyRealtimeEvent,
+        connect: connectLive,
+        demo: switchToDemo,
+        steps: PIPELINE_DATA.steps.map((s, i) => ({ step: i + 1, id: s.chip, label: s.label }))
+      };
+      window.addEventListener("message", e => {
+        if (e.data && e.data.type === "PIPELINE_STEP") applyRealtimeEvent(e.data.payload);
+      });
+
+      liveTransport.addEventListener("change", () => {
+        const isSim = liveTransport.value === "sim";
+        liveUrl.style.display = isSim ? "none" : "inline-block";
+        btnConnect.textContent = isSim ? "Start Run" : "Connect";
+      });
+
+      btnNextStep.addEventListener("click", () => {
+        applyRealtimeEvent({
+          step: currentStep + 1,
+          status: "completed"
+        });
+      });
+
+      // Auto-connect if ?stream=URL&transport=sse|ws|poll is passed in URL query string
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("stream")) {
+        const t = params.get("transport") || "sse";
+        const u = params.get("stream");
+        liveTransport.value = t;
+        liveUrl.value = u;
+        connectLive(t, u);
+      }
+
+      btnLive.addEventListener("click", () => {
+        const isOpen = liveDrawer.classList.toggle("open");
+        btnLive.setAttribute("aria-pressed", String(isOpen));
+      });
+      btnConnect.addEventListener("click", () => connectLive(liveTransport.value, liveUrl.value.trim()));
+      btnDemo.addEventListener("click", switchToDemo);
+
+      function syncPlayButton() {
+        btnPlay.textContent = isPlaying ? "Pause" : "Play";
+        btnPlay.setAttribute("aria-pressed", String(!isPlaying));
+      }
+      syncPlayButton();
+
+      btnPlay.addEventListener("click", () => {
+        isPlaying = !isPlaying;
+        lastTs = null;
+        syncPlayButton();
+      });
+
+      btnSpeed.addEventListener("click", () => {
+        speedIdx = (speedIdx + 1) % speeds.length;
+        btnSpeed.textContent = `${speeds[speedIdx]}×`;
+      });
+
+      btnFollow.addEventListener("click", () => {
+        followMode = !followMode;
+        btnFollow.setAttribute("aria-pressed", String(followMode));
+        if (followMode) scrollToActive(true);
+      });
+
+      // Turn Follow off automatically on user touch or wheel scroll
+      const disableFollowOnUserScroll = () => {
+        if (followMode) {
+          followMode = false;
+          btnFollow.setAttribute("aria-pressed", "false");
+        }
+      };
+      window.addEventListener("wheel", disableFollowOnUserScroll, { passive: true });
+      window.addEventListener("touchstart", disableFollowOnUserScroll, { passive: true });
+      canvasWrap.addEventListener("wheel", disableFollowOnUserScroll, { passive: true });
+      canvasWrap.addEventListener("touchstart", disableFollowOnUserScroll, { passive: true });
+
+      function scrollToActive(force = false) {
+        if (!followMode && !force) return;
+        if (!force && lastScrolledStep === currentStep) return;
+        lastScrolledStep = currentStep;
+        const stepObj = PIPELINE_DATA.steps[currentStep];
+        const targetChip = chipMap[stepObj.chip]?.el;
+        if (targetChip) {
+          targetChip.scrollIntoView({
+            behavior: prefersReduced ? "auto" : "smooth",
+            block: "nearest",
+            inline: "center"
+          });
+        }
+      }
+
+      function renderState(stepIdx, progress) {
+        const total = PIPELINE_DATA.steps.length;
+        const step = PIPELINE_DATA.steps[stepIdx];
+        const now = performance.now();
+        const activeStepMs = stepDurations[stepIdx] ?? (now - stepStartedAt);
+        const totalRunMs = now - runStartedAt;
+
+        stepCounter.textContent = inIdle
+          ? `Complete (${total}/${total}) · ${formatSec(totalRunMs)}`
+          : `Step ${stepIdx + 1} of ${total}`;
+        progressBar.setAttribute("aria-valuenow", String(stepIdx + 1));
+        const overallPct = inIdle ? 100 : ((stepIdx + progress) / total) * 100;
+        progressFill.style.width = `${overallPct.toFixed(1)}%`;
+
+        const descText = (liveMode && customLiveCaption) ? customLiveCaption : step.caption;
+        const timerBadge = liveMode
+          ? `<span class="elapsed-pill">${inIdle ? `Total ${formatSec(totalRunMs)}` : `Elapsed ${formatSec(activeStepMs)}`}</span>`
+          : "";
+        captionEl.innerHTML = `<strong>${step.label}:</strong> ${descText}${timerBadge}`;
+
+        if (lastScrolledStep !== stepIdx && !inIdle) {
+          scrollToActive();
+        }
+
+        // Reset chip & path visual classes
+        Object.values(chipMap).forEach(({ el, data }) => {
+          el.classList.remove("active", "done", "amber-active", "amber-done");
+          const subEl = chipSubMap[data.id];
+          if (subEl) {
+            subEl.classList.remove("dynamic");
+            subEl.textContent = data.sub;
+          }
+        });
+        Object.values(pathMap).forEach(p => p.classList.remove("active"));
+
+        // Mark completed steps & keep Jenkins orchestrator active during the run
+        if (chipMap.jenkins) {
+          chipMap.jenkins.el.classList.add(inIdle ? "done" : "active");
+        }
+        if (!inIdle && step.orch && pathMap[step.orch]) {
+          pathMap[step.orch].classList.add("active");
+        }
+        const limit = inIdle ? total : stepIdx + 1;
+        for (let i = 0; i < limit; i++) {
+          const s = PIPELINE_DATA.steps[i];
+          const isCurrent = !inIdle && i === stepIdx;
+          const chipEntry = chipMap[s.chip];
+          if (chipEntry) {
+            chipEntry.el.classList.add(isCurrent ? "active" : "done");
+          }
+          if (s.extraAmber && chipMap[s.extraAmber]) {
+            chipMap[s.extraAmber].el.classList.add(isCurrent ? "amber-active" : "amber-done");
+          }
+          if (s.extraDone) {
+            s.extraDone.forEach(id => chipMap[id]?.el.classList.add(isCurrent ? "active" : "done"));
+          }
+          s.paths.forEach(pid => pathMap[pid]?.classList.add("active"));
+        }
+
+        // Dynamic Predictions subtitle ("truncating…" -> "inserting…" -> "in PostgreSQL")
+        if (!inIdle && step.dynamicSub) {
+          const subEl = chipSubMap.preds;
+          subEl.classList.add("dynamic");
+          if (liveMode && customLiveSub) subEl.textContent = customLiveSub;
+          else if (progress < 0.42) subEl.textContent = "truncating…";
+          else if (progress < 0.85) subEl.textContent = "inserting…";
+          else subEl.textContent = "in PostgreSQL";
+        }
+
+        // Animate traveling teal dots along active step paths
+        dataDots.forEach(d => d.setAttribute("opacity", "0"));
+        if (!inIdle && step.paths.length > 0) {
+          const activePaths = step.paths.filter(id => id !== "c_git_ml");
+          activePaths.forEach((pid, idx) => {
+            const p = pathMap[pid];
+            const dot = dataDots[idx];
+            if (p && dot) {
+              const len = p.getTotalLength();
+              const pt = p.getPointAtLength(len * Math.min(1, progress));
+              dot.setAttribute("cx", pt.x.toFixed(1));
+              dot.setAttribute("cy", pt.y.toFixed(1));
+              dot.setAttribute("opacity", "1");
+            }
+          });
+        }
+
+        // Animate rejected red rows dropping & fading out below Preprocess chip
+        rejectDots.forEach((d, idx) => {
+          if (!inIdle && step.reject) {
+            const localP = Math.max(0, Math.min(1, (progress - idx * 0.14) / 0.72));
+            if (localP > 0 && localP < 1) {
+              const startX = 432 + idx * 14;
+              const startY = 256;
+              d.setAttribute("cx", startX);
+              d.setAttribute("cy", (startY + localP * 28).toFixed(1));
+              d.setAttribute("opacity", (1 - localP).toFixed(2));
+            } else {
+              d.setAttribute("opacity", "0");
+            }
+          } else {
+            d.setAttribute("opacity", "0");
+          }
+        });
+
+        // Animate amber ".pkl" pill traveling from Git Repo to ML Model
+        if (!inIdle && step.amberTransfer && pathMap.c_git_ml) {
+          const p = pathMap.c_git_ml;
+          const len = p.getTotalLength();
+          const pt = p.getPointAtLength(len * Math.min(1, progress * 1.15));
+          pklBadge.setAttribute("transform", `translate(${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`);
+          pklBadge.setAttribute("opacity", "1");
+        } else {
+          pklBadge.setAttribute("opacity", "0");
+        }
+      }
+
+      function tick(ts) {
+        if (isPlaying) {
+          if (lastTs !== null) {
+            const dt = (ts - lastTs) * speeds[speedIdx];
+            if (liveMode) {
+              // Gentle looping pulse along the active step's connectors while waiting for next live event
+              liveStepProgress = (liveStepProgress + dt / 1600) % 1;
+            } else {
+              elapsedInPhase += dt;
+              const limit = inIdle ? PIPELINE_DATA.idleDurationMs : PIPELINE_DATA.stepDurationMs;
+              if (elapsedInPhase >= limit) {
+                elapsedInPhase = 0;
+                if (inIdle) {
+                  inIdle = false;
+                  currentStep = 0;
+                  lastScrolledStep = -1;
+                } else if (currentStep + 1 < PIPELINE_DATA.steps.length) {
+                  currentStep++;
+                } else {
+                  inIdle = true;
+                }
+              }
+            }
+          }
+          lastTs = ts;
+        }
+        const phaseDur = inIdle ? PIPELINE_DATA.idleDurationMs : PIPELINE_DATA.stepDurationMs;
+        const activeProgress = liveMode ? (inIdle ? 1 : liveStepProgress) : Math.min(1, elapsedInPhase / phaseDur);
+        renderState(currentStep, activeProgress);
+        requestAnimationFrame(tick);
+      }
+
+      renderState(0, 0);
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>
