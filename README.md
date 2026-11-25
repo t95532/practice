@@ -1,1 +1,15 @@
-All of these projects were created for practice purposes only. They may not fully reflect or apply to real-world projects. Credit goes to the original sources for providing the content. The steps and implementations are based on the theoretical knowledge acquired about the respective concepts
+Daily ML Run — Animated Workflow
+
+This project demonstrates the daily machine learning workflow using an animated data pipeline diagram.
+
+Animated Workflow Preview
+
+▶ "Open the Animated Workflow" (https://htmlpreview.github.io/?https://raw.githubusercontent.com/t95532/practice/main/Data/daily_ml_run_standalone_github_actions_diagram.html)
+
+Project File
+
+- "daily_ml_run_standalone_github_actions_diagram.html" — Self-contained HTML file containing the animated workflow diagram.
+
+Purpose
+
+Created for learning and practice purposes to understand the stages of a daily machine learning pipeline.
